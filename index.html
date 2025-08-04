@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Kochbuchrezept A4</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" type="image/png" href="favicon.png">
+	<link rel="apple-touch-icon" href="favicon.png">
+	<link rel="manifest" href="manifest.json">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="apple-mobile-web-app-title" content="Rezept-App">
+	<style>
+		@page {
+			size: A4;
+			margin: 0;
+		}
+
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			font-family: Arial, sans-serif;
+			background: #fafafa;
+			font-size: 12px;
+		}
+
+		.a4-page {
+			width: 210mm;
+			height: 297mm;
+			margin: auto;
+			background: #fff;
+			padding: 10mm;
+			box-sizing: border-box;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.title {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.title textarea {
+			width: 100%;
+			font-size: 1.2em;
+			font-weight: bold;
+			padding: 8px;
+			border: none;
+			box-sizing: border-box;
+			resize: none;
+			line-height: 1.4;
+			height: 3.2em;
+			overflow: hidden;
+			background: transparent;
+		}
+
+		.content {
+			display: flex;
+			flex: 1;
+			gap: 16px;
+			height: 100%;
+		}
+
+		.left-column {
+			width: 45%;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.photo-wrapper {
+			width: 100%;
+			aspect-ratio: 4/3;
+			background: #eee;
+			border-radius: 4px;
+			cursor: pointer;
+			overflow: hidden;
+		}
+
+		.photo-wrapper img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: none;
+		}
+
+		.zutaten,
+		.zubereitung {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.zubereitung {
+			gap: 4px;
+		}
+
+		.zubereitung h2 {
+			margin-top: 0;
+		}
+
+		.zutaten textarea,
+		.zubereitung textarea {
+			width: 100%;
+			height: 100%;
+			font-size: 0.95em;
+			padding: 6px;
+			border: none;
+			resize: none;
+			box-sizing: border-box;
+			background: transparent;
+		}
+
+		.right-column {
+			width: 55%;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.preparation-time {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			margin-bottom: 5px;
+		}
+
+		.preparation-time label {
+			font-weight: bold;
+			font-size: 0.95em;
+		}
+
+		.preparation-time input {
+			padding: 4px;
+			border: 1px solid #ccc;
+			border-radius: 3px;
+			font-size: 0.95em;
+			width: 120px;
+		}
+
+		h2 {
+			margin: 0 0 4px 0;
+			font-size: 1em;
+			font-weight: bold;
+			cursor: pointer;
+		}
+
+		input[type="file"] {
+			display: none;
+		}
+
+		.font-size-controls {
+			display: flex;
+			gap: 4px;
+		}
+
+		.font-size-controls button {
+			padding: 2px 6px;
+			font-size: 0.8em;
+			cursor: pointer;
+		}
+
+		.export-controls {
+			display: flex;
+			justify-content: flex-end;
+			gap: 10px;
+			margin-top: 10px;
+		}
+
+		.export-controls button {
+			padding: 8px 12px;
+			font-size: 0.9em;
+			cursor: pointer;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			background-color: #f0f0f0;
+		}
+
+		.hide-for-export {
+			display: none;
+		}
+	</style>
+</head>
+
+<body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+	<div class="a4-page" id="rezept-container">
+		<div class="title">
+			<textarea id="title" placeholder="Rezepttitel hier eingeben..."></textarea>
+			<div class="font-size-controls">
+				<button id="title-decrease">-</button>
+				<button id="title-increase">+</button>
+			</div>
+		</div>
+		<div class="content">
+			<div class="left-column">
+				<label for="photoInput" class="photo-wrapper">
+					<img id="photoPreview" alt="Rezeptfoto">
+				</label>
+				<div class="zutaten">
+					<h2>Zutaten</h2>
+					<div class="font-size-controls">
+						<button id="zutaten-decrease">-</button>
+						<button id="zutaten-increase">+</button>
+					</div>
+					<textarea id="zutaten" placeholder="Hier Zutaten einfügen..."></textarea>
+				</div>
+			</div>
+			<div class="right-column">
+				<div class="preparation-time">
+					<label for="prepTime">Zubereitungszeit:</label>
+					<input type="text" id="prepTime" placeholder="z. B. 30 Minuten">
+				</div>
+				<div class="zubereitung">
+					<h2>Zubereitung</h2>
+					<div class="font-size-controls">
+						<button id="zubereitung-decrease">-</button>
+						<button id="zubereitung-increase">+</button>
+					</div>
+					<textarea id="anleitung" placeholder="Hier die Zubereitung einfügen..."></textarea>
+				</div>
+			</div>
+		</div>
+		<input type="file" accept="image/*" id="photoInput">
+		<div class="export-controls">
+			<button id="exportJpgBtn">Als JPG exportieren</button>
+		</div>
+	</div>
+
+	<script>
+		const photoInput = document.getElementById('photoInput');
+		const photoPreview = document.getElementById('photoPreview');
+		const titleTextarea = document.getElementById('title');
+		const zutatenTextarea = document.getElementById('zutaten');
+		const anleitungTextarea = document.getElementById('anleitung');
+		const prepTimeInput = document.getElementById('prepTime');
+		const rezeptContainer = document.getElementById('rezept-container');
+
+		const titleDecreaseBtn = document.getElementById('title-decrease');
+		const titleIncreaseBtn = document.getElementById('title-increase');
+		const zutatenDecreaseBtn = document.getElementById('zutaten-decrease');
+		const zutatenIncreaseBtn = document.getElementById('zutaten-increase');
+		const zubereitungDecreaseBtn = document.getElementById('zubereitung-decrease');
+		const zubereitungIncreaseBtn = document.getElementById('zubereitung-increase');
+
+		const exportJpgBtn = document.getElementById('exportJpgBtn');
+
+		let titleFontSize = 1.2;
+		let zutatenFontSize = 0.95;
+		let zubereitungFontSize = 0.95;
+
+		function applyFontSize(elements, fontSize) {
+			if (Array.isArray(elements)) {
+				elements.forEach(element => element.style.fontSize = `${fontSize}em`);
+			} else {
+				elements.style.fontSize = `${fontSize}em`;
+			}
+		}
+
+		photoInput.addEventListener('change', function(event) {
+			const file = event.target.files[0];
+			if (file) {
+				const reader = new FileReader();
+				reader.onload = function(e) {
+					photoPreview.src = e.target.result;
+					photoPreview.style.display = 'block';
+				};
+				reader.readAsDataURL(file);
+			}
+		});
+
+		titleDecreaseBtn.addEventListener('click', () => {
+			titleFontSize = Math.max(0.5, titleFontSize - 0.05);
+			applyFontSize(titleTextarea, titleFontSize);
+		});
+
+		titleIncreaseBtn.addEventListener('click', () => {
+			titleFontSize = Math.min(2, titleFontSize + 0.05);
+			applyFontSize(titleTextarea, titleFontSize);
+		});
+
+		zutatenDecreaseBtn.addEventListener('click', () => {
+			zutatenFontSize = Math.max(0.5, zutatenFontSize - 0.05);
+			applyFontSize(zutatenTextarea, zutatenFontSize);
+		});
+
+		zutatenIncreaseBtn.addEventListener('click', () => {
+			zutatenFontSize = Math.min(2, zutatenFontSize + 0.05);
+			applyFontSize(zutatenTextarea, zutatenFontSize);
+		});
+
+		zubereitungDecreaseBtn.addEventListener('click', () => {
+			zubereitungFontSize = Math.max(0.5, zubereitungFontSize - 0.05);
+			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+		});
+
+		zubereitungIncreaseBtn.addEventListener('click', () => {
+			zubereitungFontSize = Math.min(2, zubereitungFontSize + 0.05);
+			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+		});
+
+		applyFontSize(titleTextarea, titleFontSize);
+		applyFontSize(zutatenTextarea, zutatenFontSize);
+		applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+
+		// Export-Funktion
+		exportJpgBtn.addEventListener('click', () => {
+			const controls = document.querySelectorAll('.font-size-controls, .export-controls');
+			controls.forEach(c => c.classList.add('hide-for-export'));
+
+			html2canvas(rezeptContainer, {
+				scale: 2,
+				useCORS: true,
+				allowTaint: true
+			}).then(canvas => {
+				const link = document.createElement('a');
+				link.download = 'mein-rezept.jpg';
+				link.href = canvas.toDataURL('image/jpeg', 1.0);
+				link.click();
+				controls.forEach(c => c.classList.remove('hide-for-export'));
+			});
+		});
+	</script>
+</body>
+
+</html>
