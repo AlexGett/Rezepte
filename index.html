@@ -46,14 +46,16 @@
 		}
 
 		.title textarea {
-			width: 100%;
+			width: 70%;
 			font-size: 1.2em;
 			font-weight: bold;
-			padding: 8px;
 			border: none;
 			box-sizing: border-box;
 			resize: none;
-			height: 3.2em;
+			/* Korrektur: Feste Höhe entfernt, um dynamische Anpassung zu ermöglichen */
+			height: auto;
+			min-height: 0.5em;
+			/* Mindesthöhe für eine Zeile */
 			overflow: hidden;
 			background: transparent;
 		}
@@ -103,7 +105,6 @@
 			margin-top: 0;
 		}
 
-		/* --- ANPASSUNGEN HIER --- */
 		.zutaten textarea,
 		.zubereitung textarea {
 			width: 100%;
@@ -115,10 +116,7 @@
 			box-sizing: border-box;
 			background: transparent;
 			min-height: 1.2em;
-			/* Mindesthöhe für eine Zeile */
 		}
-
-		/* --- ENDE ANPASSUNGEN --- */
 
 		.right-column {
 			width: 55%;
