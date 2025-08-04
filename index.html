@@ -46,16 +46,15 @@
 		}
 
 		.title textarea {
-			width: 70%;
+			width: 100%;
 			font-size: 1.2em;
 			font-weight: bold;
+			padding: 8px;
 			border: none;
 			box-sizing: border-box;
 			resize: none;
-			/* Korrektur: Feste Höhe entfernt, um dynamische Anpassung zu ermöglichen */
 			height: auto;
-			min-height: 0.5em;
-			/* Mindesthöhe für eine Zeile */
+			min-height: 1.5em;
 			overflow: hidden;
 			background: transparent;
 		}
@@ -332,7 +331,8 @@
 		// Service Worker Registrierung
 		if ('serviceWorker' in navigator) {
 			window.addEventListener('load', () => {
-				navigator.serviceWorker.register('/service-worker.js')
+				// Korrektur: Relativer Pfad zum Service Worker
+				navigator.serviceWorker.register('./service-worker.js')
 					.then(registration => {
 						console.log('Service Worker registriert:', registration.scope);
 					})
