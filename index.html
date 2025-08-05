@@ -59,6 +59,16 @@
 			background: transparent;
 		}
 
+		/* Stil für statische Elemente beim Export */
+		.title .static-text {
+			width: 100%;
+			font-size: 1.2em;
+			font-weight: bold;
+			padding: 8px;
+			box-sizing: border-box;
+		}
+
+
 		.content {
 			display: flex;
 			flex: 1;
@@ -117,6 +127,18 @@
 			min-height: 1.2em;
 		}
 
+		/* Stil für statische Elemente beim Export */
+		.zutaten .static-text,
+		.zubereitung .static-text {
+			width: 100%;
+			flex: 1;
+			font-size: 0.95em;
+			padding: 6px;
+			box-sizing: border-box;
+			white-space: pre-wrap;
+			/* Zeilenumbrüche beibehalten */
+		}
+
 		.right-column {
 			width: 55%;
 			display: flex;
@@ -140,6 +162,12 @@
 			padding: 4px;
 			border: 1px solid #ccc;
 			border-radius: 3px;
+			font-size: 0.95em;
+			width: 120px;
+		}
+
+		/* Stil für statische Elemente beim Export */
+		.preparation-time .static-text {
 			font-size: 0.95em;
 			width: 120px;
 		}
@@ -312,18 +340,45 @@
 
 		// Export-Funktion
 		exportJpgBtn.addEventListener('click', () => {
+			// Steuerelemente ausblenden
 			const controls = document.querySelectorAll('.font-size-controls, .export-controls');
 			controls.forEach(c => c.classList.add('hide-for-export'));
 
+			// Formularelemente durch statische div-Elemente ersetzen
+			const originalElements = [titleTextarea, zutatenTextarea, anleitungTextarea, prepTimeInput];
+			const replacementElements = [];
+
+			originalElements.forEach(element => {
+				const replacement = document.createElement('div');
+				replacement.classList.add('static-text');
+				// Text und Inline-Styles vom Originalelement übernehmen
+				replacement.textContent = element.value;
+				replacement.style.cssText = element.style.cssText;
+				// Das Originalelement temporär ersetzen
+				element.style.display = 'none';
+				element.parentNode.insertBefore(replacement, element);
+				replacementElements.push({ original: element, replacement: replacement });
+			});
+
+			// html2canvas aufrufen
 			html2canvas(rezeptContainer, {
 				scale: 2,
 				useCORS: true,
 				allowTaint: true
 			}).then(canvas => {
+				// Canvas in JPG umwandeln und herunterladen
 				const link = document.createElement('a');
 				link.download = 'mein-rezept.jpg';
 				link.href = canvas.toDataURL('image/jpeg', 1.0);
 				link.click();
+
+				// Die ursprünglichen Elemente wiederherstellen
+				replacementElements.forEach(({ original, replacement }) => {
+					replacement.parentNode.removeChild(replacement);
+					original.style.display = '';
+				});
+
+				// Steuerelemente wieder einblenden
 				controls.forEach(c => c.classList.remove('hide-for-export'));
 			});
 		});
@@ -331,7 +386,6 @@
 		// Service Worker Registrierung
 		if ('serviceWorker' in navigator) {
 			window.addEventListener('load', () => {
-				// Korrektur: Relativer Pfad zum Service Worker
 				navigator.serviceWorker.register('./service-worker.js')
 					.then(registration => {
 						console.log('Service Worker registriert:', registration.scope);
