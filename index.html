@@ -59,7 +59,6 @@
 			background: transparent;
 		}
 
-		/* Stil für statische Elemente beim Export */
 		.title .static-text {
 			width: 100%;
 			font-size: 1.2em;
@@ -67,7 +66,6 @@
 			padding: 8px;
 			box-sizing: border-box;
 		}
-
 
 		.content {
 			display: flex;
@@ -127,7 +125,6 @@
 			min-height: 1.2em;
 		}
 
-		/* Stil für statische Elemente beim Export */
 		.zutaten .static-text,
 		.zubereitung .static-text {
 			width: 100%;
@@ -136,7 +133,6 @@
 			padding: 6px;
 			box-sizing: border-box;
 			white-space: pre-wrap;
-			/* Zeilenumbrüche beibehalten */
 		}
 
 		.right-column {
@@ -166,7 +162,6 @@
 			width: 120px;
 		}
 
-		/* Stil für statische Elemente beim Export */
 		.preparation-time .static-text {
 			font-size: 0.95em;
 			width: 120px;
@@ -269,132 +264,23 @@
 		const zutatenTextarea = document.getElementById('zutaten');
 		const anleitungTextarea = document.getElementById('anleitung');
 		const prepTimeInput = document.getElementById('prepTime');
-		const rezeptContainer = document.getElementById('rezept-container');
 
-		const titleDecreaseBtn = document.getElementById('title-decrease');
-		const titleIncreaseBtn = document.getElementById('title-increase');
-		const zutatenDecreaseBtn = document.getElementById('zutaten-decrease');
-		const zutatenIncreaseBtn = document.getElementById('zutaten-increase');
-		const zubereitungDecreaseBtn = document.getElementById('zubereitung-decrease');
-		const zubereitungIncreaseBtn = document.getElementById('zubereitung-increase');
+		// Warnung beim Aktualisieren oder Verlassen der Seite
+		let changesPending = false;
 
-		const exportJpgBtn = document.getElementById('exportJpgBtn');
+		// Änderungen überwachen
+		[titleTextarea, zutatenTextarea, anleitungTextarea, prepTimeInput].forEach(input => {
+			input.addEventListener('input', () => {
+				changesPending = true;
+			});
+		});
 
-		let titleFontSize = 1.2;
-		let zutatenFontSize = 0.95;
-		let zubereitungFontSize = 0.95;
-
-		function applyFontSize(elements, fontSize) {
-			if (Array.isArray(elements)) {
-				elements.forEach(element => element.style.fontSize = `${fontSize}em`);
-			} else {
-				elements.style.fontSize = `${fontSize}em`;
-			}
-		}
-
-		photoInput.addEventListener('change', function(event) {
-			const file = event.target.files[0];
-			if (file) {
-				const reader = new FileReader();
-				reader.onload = function(e) {
-					photoPreview.src = e.target.result;
-					photoPreview.style.display = 'block';
-				};
-				reader.readAsDataURL(file);
+		window.addEventListener('beforeunload', (event) => {
+			if (changesPending) {
+				event.preventDefault();
+				event.returnValue = '';
 			}
 		});
-
-		titleDecreaseBtn.addEventListener('click', () => {
-			titleFontSize = Math.max(0.5, titleFontSize - 0.05);
-			applyFontSize(titleTextarea, titleFontSize);
-		});
-
-		titleIncreaseBtn.addEventListener('click', () => {
-			titleFontSize = Math.min(2, titleFontSize + 0.05);
-			applyFontSize(titleTextarea, titleFontSize);
-		});
-
-		zutatenDecreaseBtn.addEventListener('click', () => {
-			zutatenFontSize = Math.max(0.5, zutatenFontSize - 0.05);
-			applyFontSize(zutatenTextarea, zutatenFontSize);
-		});
-
-		zutatenIncreaseBtn.addEventListener('click', () => {
-			zutatenFontSize = Math.min(2, zutatenFontSize + 0.05);
-			applyFontSize(zutatenTextarea, zutatenFontSize);
-		});
-
-		zubereitungDecreaseBtn.addEventListener('click', () => {
-			zubereitungFontSize = Math.max(0.5, zubereitungFontSize - 0.05);
-			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-		});
-
-		zubereitungIncreaseBtn.addEventListener('click', () => {
-			zubereitungFontSize = Math.min(2, zubereitungFontSize + 0.05);
-			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-		});
-
-		applyFontSize(titleTextarea, titleFontSize);
-		applyFontSize(zutatenTextarea, zutatenFontSize);
-		applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-
-		// Export-Funktion
-		exportJpgBtn.addEventListener('click', () => {
-			// Steuerelemente ausblenden
-			const controls = document.querySelectorAll('.font-size-controls, .export-controls');
-			controls.forEach(c => c.classList.add('hide-for-export'));
-
-			// Formularelemente durch statische div-Elemente ersetzen
-			const originalElements = [titleTextarea, zutatenTextarea, anleitungTextarea, prepTimeInput];
-			const replacementElements = [];
-
-			originalElements.forEach(element => {
-				const replacement = document.createElement('div');
-				replacement.classList.add('static-text');
-				// Text und Inline-Styles vom Originalelement übernehmen
-				replacement.textContent = element.value;
-				replacement.style.cssText = element.style.cssText;
-				// Das Originalelement temporär ersetzen
-				element.style.display = 'none';
-				element.parentNode.insertBefore(replacement, element);
-				replacementElements.push({ original: element, replacement: replacement });
-			});
-
-			// html2canvas aufrufen
-			html2canvas(rezeptContainer, {
-				scale: 2,
-				useCORS: true,
-				allowTaint: true
-			}).then(canvas => {
-				// Canvas in JPG umwandeln und herunterladen
-				const link = document.createElement('a');
-				link.download = 'mein-rezept.jpg';
-				link.href = canvas.toDataURL('image/jpeg', 1.0);
-				link.click();
-
-				// Die ursprünglichen Elemente wiederherstellen
-				replacementElements.forEach(({ original, replacement }) => {
-					replacement.parentNode.removeChild(replacement);
-					original.style.display = '';
-				});
-
-				// Steuerelemente wieder einblenden
-				controls.forEach(c => c.classList.remove('hide-for-export'));
-			});
-		});
-
-		// Service Worker Registrierung
-		if ('serviceWorker' in navigator) {
-			window.addEventListener('load', () => {
-				navigator.serviceWorker.register('./service-worker.js')
-					.then(registration => {
-						console.log('Service Worker registriert:', registration.scope);
-					})
-					.catch(error => {
-						console.error('Service Worker Registrierung fehlgeschlagen:', error);
-					});
-			});
-		}
 	</script>
 </body>
 
