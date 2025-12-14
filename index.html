@@ -59,6 +59,7 @@
 			background: transparent;
 		}
 
+		/* Stil für statische Elemente beim Export */
 		.title .static-text {
 			width: 100%;
 			font-size: 1.2em;
@@ -66,6 +67,7 @@
 			padding: 8px;
 			box-sizing: border-box;
 		}
+
 
 		.content {
 			display: flex;
@@ -125,6 +127,7 @@
 			min-height: 1.2em;
 		}
 
+		/* Stil für statische Elemente beim Export */
 		.zutaten .static-text,
 		.zubereitung .static-text {
 			width: 100%;
@@ -133,6 +136,7 @@
 			padding: 6px;
 			box-sizing: border-box;
 			white-space: pre-wrap;
+			/* Zeilenumbrüche beibehalten */
 		}
 
 		.right-column {
@@ -162,6 +166,7 @@
 			width: 120px;
 		}
 
+		/* Stil für statische Elemente beim Export */
 		.preparation-time .static-text {
 			font-size: 0.95em;
 			width: 120px;
@@ -264,23 +269,198 @@
 		const zutatenTextarea = document.getElementById('zutaten');
 		const anleitungTextarea = document.getElementById('anleitung');
 		const prepTimeInput = document.getElementById('prepTime');
+		const rezeptContainer = document.getElementById('rezept-container');
 
-		// Warnung beim Aktualisieren oder Verlassen der Seite
-		let changesPending = false;
+		const titleDecreaseBtn = document.getElementById('title-decrease');
+		const titleIncreaseBtn = document.getElementById('title-increase');
+		const zutatenDecreaseBtn = document.getElementById('zutaten-decrease');
+		const zutatenIncreaseBtn = document.getElementById('zutaten-increase');
+		const zubereitungDecreaseBtn = document.getElementById('zubereitung-decrease');
+		const zubereitungIncreaseBtn = document.getElementById('zubereitung-increase');
 
-		// Änderungen überwachen
-		[titleTextarea, zutatenTextarea, anleitungTextarea, prepTimeInput].forEach(input => {
-			input.addEventListener('input', () => {
-				changesPending = true;
+		const exportJpgBtn = document.getElementById('exportJpgBtn');
+
+		// Standard-Schriftgrößen
+		let titleFontSize = 1.2;
+		let zutatenFontSize = 0.95;
+		let zubereitungFontSize = 0.95;
+
+		// --- Funktionen zum Speichern und Laden ---
+
+		// Speichert alle relevanten Daten im localStorage
+		function saveState() {
+			localStorage.setItem('rezeptTitle', titleTextarea.value);
+			localStorage.setItem('rezeptZutaten', zutatenTextarea.value);
+			localStorage.setItem('rezeptAnleitung', anleitungTextarea.value);
+			localStorage.setItem('rezeptPrepTime', prepTimeInput.value);
+			
+			// Speichern der Schriftgrößen
+			localStorage.setItem('titleFontSize', titleFontSize);
+			localStorage.setItem('zutatenFontSize', zutatenFontSize);
+			localStorage.setItem('zubereitungFontSize', zubereitungFontSize);
+
+			// Das Foto (als DataURL) ist zu groß für localStorage und sollte über IndexedDB oder nur als Dateiname
+			// für fortgeschrittenes Speichern behandelt werden. Für diesen Scope lassen wir das Foto weg.
+		}
+
+		// Lädt die Daten aus dem localStorage beim Start
+		function loadState() {
+			// Laden der Textfelder
+			titleTextarea.value = localStorage.getItem('rezeptTitle') || '';
+			zutatenTextarea.value = localStorage.getItem('rezeptZutaten') || '';
+			anleitungTextarea.value = localStorage.getItem('rezeptAnleitung') || '';
+			prepTimeInput.value = localStorage.getItem('rezeptPrepTime') || '';
+
+			// Laden der Schriftgrößen und Anwenden
+			titleFontSize = parseFloat(localStorage.getItem('titleFontSize')) || 1.2;
+			zutatenFontSize = parseFloat(localStorage.getItem('zutatenFontSize')) || 0.95;
+			zubereitungFontSize = parseFloat(localStorage.getItem('zubereitungFontSize')) || 0.95;
+			
+			applyAllFontSizes();
+		}
+
+		// Funktion zum Anwenden der Schriftgröße auf ein Element/Array von Elementen
+		function applyFontSize(elements, fontSize) {
+			if (Array.isArray(elements)) {
+				elements.forEach(element => element.style.fontSize = `${fontSize}em`);
+			} else {
+				elements.style.fontSize = `${fontSize}em`;
+			}
+		}
+
+		// Funktion zum Anwenden aller gespeicherten Schriftgrößen
+		function applyAllFontSizes() {
+			applyFontSize(titleTextarea, titleFontSize);
+			applyFontSize(zutatenTextarea, zutatenFontSize);
+			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+		}
+
+
+		// --- Event Listener zur Datenspeicherung hinzufügen ---
+
+		// Speichern bei jeder Eingabe in den Textfeldern
+		titleTextarea.addEventListener('input', saveState);
+		zutatenTextarea.addEventListener('input', saveState);
+		anleitungTextarea.addEventListener('input', saveState);
+		prepTimeInput.addEventListener('input', saveState);
+
+
+		// --- Bestehende Logik für Foto und Schriftgrößen-Buttons ---
+
+		photoInput.addEventListener('change', function(event) {
+			const file = event.target.files[0];
+			if (file) {
+				const reader = new FileReader();
+				reader.onload = function(e) {
+					photoPreview.src = e.target.result;
+					photoPreview.style.display = 'block';
+					
+					// Optional: Basis64-String des Bildes speichern (Achtung: kann Speicherlimit überschreiten!)
+					// localStorage.setItem('rezeptFoto', e.target.result); 
+				};
+				reader.readAsDataURL(file);
+			}
+		});
+
+		titleDecreaseBtn.addEventListener('click', () => {
+			titleFontSize = Math.max(0.5, titleFontSize - 0.05);
+			applyFontSize(titleTextarea, titleFontSize);
+			saveState(); // Zustand nach Größenänderung speichern
+		});
+
+		titleIncreaseBtn.addEventListener('click', () => {
+			titleFontSize = Math.min(2, titleFontSize + 0.05);
+			applyFontSize(titleTextarea, titleFontSize);
+			saveState(); // Zustand nach Größenänderung speichern
+		});
+
+		zutatenDecreaseBtn.addEventListener('click', () => {
+			zutatenFontSize = Math.max(0.5, zutatenFontSize - 0.05);
+			applyFontSize(zutatenTextarea, zutatenFontSize);
+			saveState(); // Zustand nach Größenänderung speichern
+		});
+
+		zutatenIncreaseBtn.addEventListener('click', () => {
+			zutatenFontSize = Math.min(2, zutatenFontSize + 0.05);
+			applyFontSize(zutatenTextarea, zutatenFontSize);
+			saveState(); // Zustand nach Größenänderung speichern
+		});
+
+		zubereitungDecreaseBtn.addEventListener('click', () => {
+			zubereitungFontSize = Math.max(0.5, zubereitungFontSize - 0.05);
+			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+			saveState(); // Zustand nach Größenänderung speichern
+		});
+
+		zubereitungIncreaseBtn.addEventListener('click', () => {
+			zubereitungFontSize = Math.min(2, zubereitungFontSize + 0.05);
+			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+			saveState(); // Zustand nach Größenänderung speichern
+		});
+
+
+		// --- Initialisierung: Beim Laden der Seite zuerst gespeicherte Daten laden ---
+		loadState(); 
+		// *Anmerkung*: Die initialen 'applyFontSize' Aufrufe am Ende des Originalskripts wurden durch
+		// 'applyAllFontSizes' innerhalb der 'loadState'-Funktion ersetzt.
+
+		// Export-Funktion (unverändert)
+		exportJpgBtn.addEventListener('click', () => {
+			// Steuerelemente ausblenden
+			const controls = document.querySelectorAll('.font-size-controls, .export-controls');
+			controls.forEach(c => c.classList.add('hide-for-export'));
+
+			// Formularelemente durch statische div-Elemente ersetzen
+			const originalElements = [titleTextarea, zutatenTextarea, anleitungTextarea, prepTimeInput];
+			const replacementElements = [];
+
+			originalElements.forEach(element => {
+				const replacement = document.createElement('div');
+				replacement.classList.add('static-text');
+				// Text und Inline-Styles vom Originalelement übernehmen
+				replacement.textContent = element.value;
+				replacement.style.cssText = element.style.cssText;
+				// Das Originalelement temporär ersetzen
+				element.style.display = 'none';
+				element.parentNode.insertBefore(replacement, element);
+				replacementElements.push({ original: element, replacement: replacement });
+			});
+
+			// html2canvas aufrufen
+			html2canvas(rezeptContainer, {
+				scale: 2,
+				useCORS: true,
+				allowTaint: true
+			}).then(canvas => {
+				// Canvas in JPG umwandeln und herunterladen
+				const link = document.createElement('a');
+				link.download = 'mein-rezept.jpg';
+				link.href = canvas.toDataURL('image/jpeg', 1.0);
+				link.click();
+
+				// Die ursprünglichen Elemente wiederherstellen
+				replacementElements.forEach(({ original, replacement }) => {
+					replacement.parentNode.removeChild(replacement);
+					original.style.display = '';
+				});
+
+				// Steuerelemente wieder einblenden
+				controls.forEach(c => c.classList.remove('hide-for-export'));
 			});
 		});
 
-		window.addEventListener('beforeunload', (event) => {
-			if (changesPending) {
-				event.preventDefault();
-				event.returnValue = '';
-			}
-		});
+		// Service Worker Registrierung (unverändert)
+		if ('serviceWorker' in navigator) {
+			window.addEventListener('load', () => {
+				navigator.serviceWorker.register('./service-worker.js')
+					.then(registration => {
+						console.log('Service Worker registriert:', registration.scope);
+					})
+					.catch(error => {
+						console.error('Service Worker Registrierung fehlgeschlagen:', error);
+					});
+			});
+		}
 	</script>
 </body>
 
