@@ -37,7 +37,73 @@
 			display: flex;
 			flex-direction: column;
 			gap: 10px;
+			position: relative; /* Wichtig für Modal */
 		}
+
+		/* --- MODAL STYLES START --- */
+		.modal-backdrop {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.5);
+			display: none; /* Standardmäßig versteckt */
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		}
+
+		.modal-content {
+			background: #fff;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+			text-align: center;
+			width: 90%;
+			max-width: 400px;
+		}
+
+		.modal-content h3 {
+			margin-top: 0;
+			color: #333;
+		}
+
+		.modal-actions button {
+			padding: 10px 15px;
+			margin: 5px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 1em;
+			transition: background-color 0.3s;
+		}
+
+		#exportBtn {
+			background-color: #4CAF50;
+			color: white;
+		}
+		#exportBtn:hover {
+			background-color: #45a049;
+		}
+
+		#deleteBtn {
+			background-color: #f44336;
+			color: white;
+		}
+		#deleteBtn:hover {
+			background-color: #da190b;
+		}
+
+		#cancelBtn {
+			background-color: #ccc;
+			color: #333;
+		}
+		#cancelBtn:hover {
+			background-color: #bbb;
+		}
+		/* --- MODAL STYLES END --- */
+
 
 		.title {
 			display: flex;
@@ -258,11 +324,23 @@
 		</div>
 		<input type="file" accept="image/*" id="photoInput">
 		<div class="export-controls">
-			<button id="exportJpgBtn">Aktion wählen (Export/Löschen)</button>
+			<button id="actionModalBtn">Aktion wählen (Export/Löschen)</button>
 		</div>
 	</div>
 
+	<div id="actionModal" class="modal-backdrop">
+		<div class="modal-content">
+			<h3>Aktion auswählen</h3>
+			<p>Was möchten Sie mit diesem Rezept tun?</p>
+			<div class="modal-actions">
+				<button id="exportBtn">Als JPG exportieren</button>
+				<button id="deleteBtn">Löschen</button>
+				<button id="cancelBtn">Abbrechen</button>
+			</div>
+		</div>
+	</div>
 	<script>
+		// --- DOM-Elemente und Initialisierung ---
 		const photoInput = document.getElementById('photoInput');
 		const photoPreview = document.getElementById('photoPreview');
 		const titleTextarea = document.getElementById('title');
@@ -278,11 +356,63 @@
 		const zubereitungDecreaseBtn = document.getElementById('zubereitung-decrease');
 		const zubereitungIncreaseBtn = document.getElementById('zubereitung-increase');
 
-		const exportJpgBtn = document.getElementById('exportJpgBtn');
+		const actionModalBtn = document.getElementById('actionModalBtn'); // Button zum Öffnen des Modals
+		const actionModal = document.getElementById('actionModal'); // Das Modal-Element
+		const exportBtn = document.getElementById('exportBtn'); // Modal Export Button
+		const deleteBtn = document.getElementById('deleteBtn'); // Modal Löschen Button
+		const cancelBtn = document.getElementById('cancelBtn'); // Modal Abbrechen Button
 
+		const fields = [titleTextarea, zutatenTextarea, anleitungTextarea, prepTimeInput];
+		
 		let titleFontSize = 1.2;
 		let zutatenFontSize = 0.95;
 		let zubereitungFontSize = 0.95;
+
+		// --- LocalStorage Funktionen ---
+		const STORAGE_KEY = 'recipeData';
+
+		function saveToLocalStorage() {
+			const data = {
+				title: titleTextarea.value,
+				zutaten: zutatenTextarea.value,
+				anleitung: anleitungTextarea.value,
+				prepTime: prepTimeInput.value,
+				titleFontSize: titleFontSize,
+				zutatenFontSize: zutatenFontSize,
+				zubereitungFontSize: zubereitungFontSize,
+				photoDataUrl: photoPreview.src.startsWith('data:') ? photoPreview.src : null // Nur speichern, wenn Bild geladen
+			};
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+			// console.log("Daten gespeichert.");
+		}
+
+		function loadFromLocalStorage() {
+			const savedData = localStorage.getItem(STORAGE_KEY);
+			if (savedData) {
+				const data = JSON.parse(savedData);
+				
+				titleTextarea.value = data.title || '';
+				zutatenTextarea.value = data.zutaten || '';
+				anleitungTextarea.value = data.anleitung || '';
+				prepTimeInput.value = data.prepTime || '';
+
+				titleFontSize = data.titleFontSize || 1.2;
+				zutatenFontSize = data.zutatenFontSize || 0.95;
+				zubereitungFontSize = data.zubereitungFontSize || 0.95;
+
+				applyFontSize(titleTextarea, titleFontSize);
+				applyFontSize(zutatenTextarea, zutatenFontSize);
+				applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+
+				if (data.photoDataUrl) {
+					photoPreview.src = data.photoDataUrl;
+					photoPreview.style.display = 'block';
+				}
+				// console.log("Daten geladen.");
+			}
+		}
+
+		// --- Hilfsfunktionen für UI / Event Handling ---
 
 		function applyFontSize(elements, fontSize) {
 			if (Array.isArray(elements)) {
@@ -292,6 +422,10 @@
 			}
 		}
 
+		// Daten bei jeder Eingabe speichern
+		fields.forEach(field => field.addEventListener('input', saveToLocalStorage));
+
+		// Foto-Lade-Logik (muss das Bild auch speichern!)
 		photoInput.addEventListener('change', function(event) {
 			const file = event.target.files[0];
 			if (file) {
@@ -299,66 +433,77 @@
 				reader.onload = function(e) {
 					photoPreview.src = e.target.result;
 					photoPreview.style.display = 'block';
+					saveToLocalStorage(); // Nach dem Laden des Fotos speichern
 				};
 				reader.readAsDataURL(file);
 			}
 		});
 
+		// --- Schriftgrößen-Steuerung ---
+
 		titleDecreaseBtn.addEventListener('click', () => {
 			titleFontSize = Math.max(0.5, titleFontSize - 0.05);
 			applyFontSize(titleTextarea, titleFontSize);
+			saveToLocalStorage();
 		});
 
 		titleIncreaseBtn.addEventListener('click', () => {
 			titleFontSize = Math.min(2, titleFontSize + 0.05);
 			applyFontSize(titleTextarea, titleFontSize);
+			saveToLocalStorage();
 		});
 
 		zutatenDecreaseBtn.addEventListener('click', () => {
 			zutatenFontSize = Math.max(0.5, zutatenFontSize - 0.05);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
+			saveToLocalStorage();
 		});
 
 		zutatenIncreaseBtn.addEventListener('click', () => {
 			zutatenFontSize = Math.min(2, zutatenFontSize + 0.05);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
+			saveToLocalStorage();
 		});
 
 		zubereitungDecreaseBtn.addEventListener('click', () => {
 			zubereitungFontSize = Math.max(0.5, zubereitungFontSize - 0.05);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+			saveToLocalStorage();
 		});
 
 		zubereitungIncreaseBtn.addEventListener('click', () => {
 			zubereitungFontSize = Math.min(2, zubereitungFontSize + 0.05);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+			saveToLocalStorage();
 		});
 
-		applyFontSize(titleTextarea, titleFontSize);
-		applyFontSize(zutatenTextarea, zutatenFontSize);
-		applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-
-		// --- NEUE / GEÄNDERTE LOGIK START ---
-
-		// Funktion zum Löschen aller Felder und Zurücksetzen der Schriftgrößen
+		// Initiales Laden der Daten beim Start
+		window.addEventListener('load', loadFromLocalStorage);
+		
+		// --- Hauptfunktionen Export/Löschen ---
+		
+		// Funktion zum Löschen aller Felder
 		function clearAllFields() {
 			titleTextarea.value = '';
 			zutatenTextarea.value = '';
 			anleitungTextarea.value = '';
 			prepTimeInput.value = '';
-			photoInput.value = '';
+			photoInput.value = ''; // Wichtig, um die Dateiauswahl zurückzusetzen
 			photoPreview.src = '';
 			photoPreview.style.display = 'none';
 			
-			// Setzt die Schriftgrößen auf den Anfangswert zurück
+			// Schriftgrößen zurücksetzen
 			titleFontSize = 1.2;
 			zutatenFontSize = 0.95;
 			zubereitungFontSize = 0.95;
 			applyFontSize(titleTextarea, titleFontSize);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+			
+			localStorage.removeItem(STORAGE_KEY); // LocalStorage löschen
+			alert("Alle Felder wurden zurückgesetzt und die Speicherung gelöscht.");
 		}
-
+		
 		// Funktion für den eigentlichen Export-Vorgang
 		function performExport() {
 			// Steuerelemente ausblenden
@@ -392,7 +537,7 @@
 			}).then(canvas => {
 				// Canvas in JPG umwandeln und herunterladen
 				const link = document.createElement('a');
-				link.download = 'mein-rezept.jpg';
+				link.download = (titleTextarea.value || 'mein-rezept').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
 				link.href = canvas.toDataURL('image/jpeg', 1.0);
 				link.click();
 
@@ -411,33 +556,41 @@
 				alert("Rezept erfolgreich als JPG exportiert!");
 			});
 		}
+		
+		// --- Modal Event Listener ---
 
-		// Geänderter Event-Listener für den Export-Button
-		exportJpgBtn.addEventListener('click', () => {
-			const action = prompt("Wählen Sie eine Aktion:\n1 für Exportieren\n2 für Löschen (Alles zurücksetzen)\n3 für Zurück (Abbrechen)\n\nBitte geben Sie die Nummer ein:");
+		// Modal öffnen
+		actionModalBtn.addEventListener('click', () => {
+			actionModal.style.display = 'flex';
+		});
 
-			if (action === '1') {
-				// Aktion: Exportieren
-				performExport();
-			} else if (action === '2') {
-				// Aktion: Löschen
-				const confirmDelete = confirm("Sind Sie sicher, dass Sie alle Eingaben und das Bild löschen möchten?");
-				if (confirmDelete) {
-					clearAllFields();
-					alert("Alle Felder wurden zurückgesetzt.");
-				}
-			} else if (action === '3') {
-				// Aktion: Zurück (Abbrechen)
-				// Nichts tun
-			} else {
-				alert("Ungültige Auswahl. Aktion abgebrochen.");
+		// Modal schließen
+		function closeModal() {
+			actionModal.style.display = 'none';
+		}
+		cancelBtn.addEventListener('click', closeModal);
+		actionModal.addEventListener('click', (e) => {
+			if (e.target === actionModal) {
+				closeModal(); // Schließen bei Klick auf den Hintergrund
 			}
 		});
 
-		// --- NEUE / GEÄNDERTE LOGIK ENDE ---
+		// Modal Export-Aktion
+		exportBtn.addEventListener('click', () => {
+			closeModal();
+			performExport();
+		});
 
+		// Modal Löschen-Aktion
+		deleteBtn.addEventListener('click', () => {
+			closeModal();
+			const confirmDelete = confirm("Sind Sie sicher, dass Sie alle Eingaben und das gespeicherte Rezept löschen möchten?");
+			if (confirmDelete) {
+				clearAllFields();
+			}
+		});
 
-		// Service Worker Registrierung (unverändert)
+		// --- Service Worker Registrierung (unverändert) ---
 		if ('serviceWorker' in navigator) {
 			window.addEventListener('load', () => {
 				navigator.serviceWorker.register('./service-worker.js')
