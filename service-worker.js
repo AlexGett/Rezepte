@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kochbuch-cache-v2.4';
+const CACHE_NAME = 'kochbuch-cache-v2.5';
 const urlsToCache = [
 	'./',
 	'index.html',
