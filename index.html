@@ -210,12 +210,6 @@
 			background-color: #f0f0f0;
 		}
 
-		#clearDataBtn {
-			background-color: #fcebeb;
-			/* Leichter Rot-Ton für den Löschen-Button */
-			border-color: #e5b3b3;
-		}
-
 		.hide-for-export {
 			display: none;
 		}
@@ -264,8 +258,7 @@
 		</div>
 		<input type="file" accept="image/*" id="photoInput">
 		<div class="export-controls">
-			<button id="clearDataBtn">Daten löschen</button> 
-			<button id="exportJpgBtn">Als JPG exportieren</button>
+			<button id="exportJpgBtn">Aktion wählen (Export/Löschen)</button>
 		</div>
 	</div>
 
@@ -286,38 +279,10 @@
 		const zubereitungIncreaseBtn = document.getElementById('zubereitung-increase');
 
 		const exportJpgBtn = document.getElementById('exportJpgBtn');
-		const clearDataBtn = document.getElementById('clearDataBtn'); // Löschen-Button ID
 
-		// Standard-Schriftgrößen
 		let titleFontSize = 1.2;
 		let zutatenFontSize = 0.95;
 		let zubereitungFontSize = 0.95;
-
-		// --- Funktionen zum Speichern und Laden ---
-
-		function saveState() {
-			localStorage.setItem('rezeptTitle', titleTextarea.value);
-			localStorage.setItem('rezeptZutaten', zutatenTextarea.value);
-			localStorage.setItem('rezeptAnleitung', anleitungTextarea.value);
-			localStorage.setItem('rezeptPrepTime', prepTimeInput.value);
-			
-			localStorage.setItem('titleFontSize', titleFontSize);
-			localStorage.setItem('zutatenFontSize', zutatenFontSize);
-			localStorage.setItem('zubereitungFontSize', zubereitungFontSize);
-		}
-
-		function loadState() {
-			titleTextarea.value = localStorage.getItem('rezeptTitle') || '';
-			zutatenTextarea.value = localStorage.getItem('rezeptZutaten') || '';
-			anleitungTextarea.value = localStorage.getItem('rezeptAnleitung') || '';
-			prepTimeInput.value = localStorage.getItem('rezeptPrepTime') || '';
-
-			titleFontSize = parseFloat(localStorage.getItem('titleFontSize')) || 1.2;
-			zutatenFontSize = parseFloat(localStorage.getItem('zutatenFontSize')) || 0.95;
-			zubereitungFontSize = parseFloat(localStorage.getItem('zubereitungFontSize')) || 0.95;
-			
-			applyAllFontSizes();
-		}
 
 		function applyFontSize(elements, fontSize) {
 			if (Array.isArray(elements)) {
@@ -326,57 +291,6 @@
 				elements.style.fontSize = `${fontSize}em`;
 			}
 		}
-
-		function applyAllFontSizes() {
-			applyFontSize(titleTextarea, titleFontSize);
-			applyFontSize(zutatenTextarea, zutatenFontSize);
-			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-		}
-        
-		function clearState() {
-			if (!confirm('Sind Sie sicher, dass Sie alle eingegebenen Daten löschen möchten? Dieser Vorgang kann nicht rückgängig gemacht werden.')) {
-				return;
-			}
-
-			// 1. Textfelder leeren
-			titleTextarea.value = '';
-			zutatenTextarea.value = '';
-			anleitungTextarea.value = '';
-			prepTimeInput.value = '';
-
-			// 2. Schriftgrößen auf Standardwerte zurücksetzen und anwenden
-			titleFontSize = 1.2;
-			zutatenFontSize = 0.95;
-			zubereitungFontSize = 0.95;
-			applyAllFontSizes();
-
-			// 3. Foto entfernen (Anzeige)
-			photoPreview.src = '';
-			photoPreview.style.display = 'none';
-
-			// 4. Alle gespeicherten Daten aus dem localStorage entfernen
-			localStorage.removeItem('rezeptTitle');
-			localStorage.removeItem('rezeptZutaten');
-			localStorage.removeItem('rezeptAnleitung');
-			localStorage.removeItem('rezeptPrepTime');
-			localStorage.removeItem('titleFontSize');
-			localStorage.removeItem('zutatenFontSize');
-			localStorage.removeItem('zubereitungFontSize');
-		}
-
-		// --- Event Listener ---
-
-		// Speichern bei jeder Eingabe
-		titleTextarea.addEventListener('input', saveState);
-		zutatenTextarea.addEventListener('input', saveState);
-		anleitungTextarea.addEventListener('input', saveState);
-		prepTimeInput.addEventListener('input', saveState);
-        
-		// Event Listener für den Löschen-Button
-		clearDataBtn.addEventListener('click', clearState);
-
-
-		// --- Logik für Foto und Schriftgrößen-Buttons ---
 
 		photoInput.addEventListener('change', function(event) {
 			const file = event.target.files[0];
@@ -393,45 +307,60 @@
 		titleDecreaseBtn.addEventListener('click', () => {
 			titleFontSize = Math.max(0.5, titleFontSize - 0.05);
 			applyFontSize(titleTextarea, titleFontSize);
-			saveState(); 
 		});
 
 		titleIncreaseBtn.addEventListener('click', () => {
 			titleFontSize = Math.min(2, titleFontSize + 0.05);
 			applyFontSize(titleTextarea, titleFontSize);
-			saveState(); 
 		});
 
 		zutatenDecreaseBtn.addEventListener('click', () => {
 			zutatenFontSize = Math.max(0.5, zutatenFontSize - 0.05);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
-			saveState(); 
 		});
 
 		zutatenIncreaseBtn.addEventListener('click', () => {
 			zutatenFontSize = Math.min(2, zutatenFontSize + 0.05);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
-			saveState(); 
 		});
 
 		zubereitungDecreaseBtn.addEventListener('click', () => {
 			zubereitungFontSize = Math.max(0.5, zubereitungFontSize - 0.05);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-			saveState(); 
 		});
 
 		zubereitungIncreaseBtn.addEventListener('click', () => {
 			zubereitungFontSize = Math.min(2, zubereitungFontSize + 0.05);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-			saveState(); 
 		});
 
+		applyFontSize(titleTextarea, titleFontSize);
+		applyFontSize(zutatenTextarea, zutatenFontSize);
+		applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
 
-		// --- Initialisierung ---
-		loadState(); 
+		// --- NEUE / GEÄNDERTE LOGIK START ---
 
-		// Export-Funktion (unverändert)
-		exportJpgBtn.addEventListener('click', () => {
+		// Funktion zum Löschen aller Felder und Zurücksetzen der Schriftgrößen
+		function clearAllFields() {
+			titleTextarea.value = '';
+			zutatenTextarea.value = '';
+			anleitungTextarea.value = '';
+			prepTimeInput.value = '';
+			photoInput.value = '';
+			photoPreview.src = '';
+			photoPreview.style.display = 'none';
+			
+			// Setzt die Schriftgrößen auf den Anfangswert zurück
+			titleFontSize = 1.2;
+			zutatenFontSize = 0.95;
+			zubereitungFontSize = 0.95;
+			applyFontSize(titleTextarea, titleFontSize);
+			applyFontSize(zutatenTextarea, zutatenFontSize);
+			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
+		}
+
+		// Funktion für den eigentlichen Export-Vorgang
+		function performExport() {
 			// Steuerelemente ausblenden
 			const controls = document.querySelectorAll('.font-size-controls, .export-controls');
 			controls.forEach(c => c.classList.add('hide-for-export'));
@@ -443,11 +372,16 @@
 			originalElements.forEach(element => {
 				const replacement = document.createElement('div');
 				replacement.classList.add('static-text');
+				// Text und Inline-Styles vom Originalelement übernehmen
 				replacement.textContent = element.value;
 				replacement.style.cssText = element.style.cssText;
+				// Das Originalelement temporär ersetzen
 				element.style.display = 'none';
 				element.parentNode.insertBefore(replacement, element);
-				replacementElements.push({ original: element, replacement: replacement });
+				replacementElements.push({
+					original: element,
+					replacement: replacement
+				});
 			});
 
 			// html2canvas aufrufen
@@ -456,21 +390,52 @@
 				useCORS: true,
 				allowTaint: true
 			}).then(canvas => {
+				// Canvas in JPG umwandeln und herunterladen
 				const link = document.createElement('a');
 				link.download = 'mein-rezept.jpg';
 				link.href = canvas.toDataURL('image/jpeg', 1.0);
 				link.click();
 
 				// Die ursprünglichen Elemente wiederherstellen
-				replacementElements.forEach(({ original, replacement }) => {
+				replacementElements.forEach(({
+					original,
+					replacement
+				}) => {
 					replacement.parentNode.removeChild(replacement);
 					original.style.display = '';
 				});
 
 				// Steuerelemente wieder einblenden
 				controls.forEach(c => c.classList.remove('hide-for-export'));
+
+				alert("Rezept erfolgreich als JPG exportiert!");
 			});
+		}
+
+		// Geänderter Event-Listener für den Export-Button
+		exportJpgBtn.addEventListener('click', () => {
+			const action = prompt("Wählen Sie eine Aktion:\n1 für Exportieren\n2 für Löschen (Alles zurücksetzen)\n3 für Zurück (Abbrechen)\n\nBitte geben Sie die Nummer ein:");
+
+			if (action === '1') {
+				// Aktion: Exportieren
+				performExport();
+			} else if (action === '2') {
+				// Aktion: Löschen
+				const confirmDelete = confirm("Sind Sie sicher, dass Sie alle Eingaben und das Bild löschen möchten?");
+				if (confirmDelete) {
+					clearAllFields();
+					alert("Alle Felder wurden zurückgesetzt.");
+				}
+			} else if (action === '3') {
+				// Aktion: Zurück (Abbrechen)
+				// Nichts tun
+			} else {
+				alert("Ungültige Auswahl. Aktion abgebrochen.");
+			}
 		});
+
+		// --- NEUE / GEÄNDERTE LOGIK ENDE ---
+
 
 		// Service Worker Registrierung (unverändert)
 		if ('serviceWorker' in navigator) {
