@@ -209,6 +209,11 @@
 			border-radius: 4px;
 			background-color: #f0f0f0;
 		}
+        
+        #clearDataBtn {
+            background-color: #fcebeb; /* Leichter Rot-Ton für den Löschen-Button */
+            border-color: #e5b3b3;
+        }
 
 		.hide-for-export {
 			display: none;
@@ -258,6 +263,7 @@
 		</div>
 		<input type="file" accept="image/*" id="photoInput">
 		<div class="export-controls">
+			<button id="clearDataBtn">Daten löschen</button>
 			<button id="exportJpgBtn">Als JPG exportieren</button>
 		</div>
 	</div>
@@ -279,6 +285,7 @@
 		const zubereitungIncreaseBtn = document.getElementById('zubereitung-increase');
 
 		const exportJpgBtn = document.getElementById('exportJpgBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn'); // NEU: Löschen-Button
 
 		// Standard-Schriftgrößen
 		let titleFontSize = 1.2;
@@ -298,9 +305,6 @@
 			localStorage.setItem('titleFontSize', titleFontSize);
 			localStorage.setItem('zutatenFontSize', zutatenFontSize);
 			localStorage.setItem('zubereitungFontSize', zubereitungFontSize);
-
-			// Das Foto (als DataURL) ist zu groß für localStorage und sollte über IndexedDB oder nur als Dateiname
-			// für fortgeschrittenes Speichern behandelt werden. Für diesen Scope lassen wir das Foto weg.
 		}
 
 		// Lädt die Daten aus dem localStorage beim Start
@@ -334,7 +338,41 @@
 			applyFontSize(zutatenTextarea, zutatenFontSize);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
 		}
+        
+        // NEUE Funktion zum Löschen aller Daten
+        function clearState() {
+            if (!confirm('Sind Sie sicher, dass Sie alle eingegebenen Daten löschen möchten? Dieser Vorgang kann nicht rückgängig gemacht werden.')) {
+                return; // Abbruch, wenn der Benutzer auf "Abbrechen" klickt
+            }
 
+            // 1. Textfelder leeren
+            titleTextarea.value = '';
+            zutatenTextarea.value = '';
+            anleitungTextarea.value = '';
+            prepTimeInput.value = '';
+
+            // 2. Schriftgrößen auf Standardwerte zurücksetzen und anwenden
+            titleFontSize = 1.2;
+            zutatenFontSize = 0.95;
+            zubereitungFontSize = 0.95;
+            applyAllFontSizes();
+
+            // 3. Foto entfernen (Anzeige)
+            photoPreview.src = '';
+            photoPreview.style.display = 'none';
+
+            // 4. Alle gespeicherten Daten aus dem localStorage entfernen
+            localStorage.removeItem('rezeptTitle');
+            localStorage.removeItem('rezeptZutaten');
+            localStorage.removeItem('rezeptAnleitung');
+            localStorage.removeItem('rezeptPrepTime');
+            localStorage.removeItem('titleFontSize');
+            localStorage.removeItem('zutatenFontSize');
+            localStorage.removeItem('zubereitungFontSize');
+            
+            // Optional: Benachrichtigung für den Benutzer
+            // alert('Alle Daten wurden gelöscht.'); // Bereits durch das confirm implizit
+        }
 
 		// --- Event Listener zur Datenspeicherung hinzufügen ---
 
@@ -343,6 +381,9 @@
 		zutatenTextarea.addEventListener('input', saveState);
 		anleitungTextarea.addEventListener('input', saveState);
 		prepTimeInput.addEventListener('input', saveState);
+        
+        // NEU: Event Listener für den Löschen-Button
+        clearDataBtn.addEventListener('click', clearState);
 
 
 		// --- Bestehende Logik für Foto und Schriftgrößen-Buttons ---
@@ -355,8 +396,7 @@
 					photoPreview.src = e.target.result;
 					photoPreview.style.display = 'block';
 					
-					// Optional: Basis64-String des Bildes speichern (Achtung: kann Speicherlimit überschreiten!)
-					// localStorage.setItem('rezeptFoto', e.target.result); 
+					// Ein größeres Bild (DataURL) im localStorage zu speichern, wird hier bewusst vermieden.
 				};
 				reader.readAsDataURL(file);
 			}
@@ -365,44 +405,42 @@
 		titleDecreaseBtn.addEventListener('click', () => {
 			titleFontSize = Math.max(0.5, titleFontSize - 0.05);
 			applyFontSize(titleTextarea, titleFontSize);
-			saveState(); // Zustand nach Größenänderung speichern
+			saveState(); 
 		});
 
 		titleIncreaseBtn.addEventListener('click', () => {
 			titleFontSize = Math.min(2, titleFontSize + 0.05);
 			applyFontSize(titleTextarea, titleFontSize);
-			saveState(); // Zustand nach Größenänderung speichern
+			saveState(); 
 		});
 
 		zutatenDecreaseBtn.addEventListener('click', () => {
 			zutatenFontSize = Math.max(0.5, zutatenFontSize - 0.05);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
-			saveState(); // Zustand nach Größenänderung speichern
+			saveState(); 
 		});
 
 		zutatenIncreaseBtn.addEventListener('click', () => {
 			zutatenFontSize = Math.min(2, zutatenFontSize + 0.05);
 			applyFontSize(zutatenTextarea, zutatenFontSize);
-			saveState(); // Zustand nach Größenänderung speichern
+			saveState(); 
 		});
 
 		zubereitungDecreaseBtn.addEventListener('click', () => {
 			zubereitungFontSize = Math.max(0.5, zubereitungFontSize - 0.05);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-			saveState(); // Zustand nach Größenänderung speichern
+			saveState(); 
 		});
 
 		zubereitungIncreaseBtn.addEventListener('click', () => {
 			zubereitungFontSize = Math.min(2, zubereitungFontSize + 0.05);
 			applyFontSize([anleitungTextarea, prepTimeInput], zubereitungFontSize);
-			saveState(); // Zustand nach Größenänderung speichern
+			saveState(); 
 		});
 
 
 		// --- Initialisierung: Beim Laden der Seite zuerst gespeicherte Daten laden ---
 		loadState(); 
-		// *Anmerkung*: Die initialen 'applyFontSize' Aufrufe am Ende des Originalskripts wurden durch
-		// 'applyAllFontSizes' innerhalb der 'loadState'-Funktion ersetzt.
 
 		// Export-Funktion (unverändert)
 		exportJpgBtn.addEventListener('click', () => {
